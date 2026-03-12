@@ -1,16 +1,16 @@
 import requests
 import pandas as pd
 import gspread
-import time
 import os
 import json
+import time
 from datetime import date
 from google.oauth2.service_account import Credentials
 
 
-# =============================
+# ====================================
 # META CONFIG
-# =============================
+# ====================================
 
 ACCESS_TOKEN = os.environ["META_TOKEN"]
 
@@ -21,9 +21,9 @@ ACCOUNTS = {
 }
 
 
-# =============================
-# SAFE REQUEST
-# =============================
+# ====================================
+# SAFE REQUEST (ANTI TIMEOUT)
+# ====================================
 
 def safe_request(url, params=None):
 
@@ -41,9 +41,9 @@ def safe_request(url, params=None):
     raise Exception("Meta API gagal")
 
 
-# =============================
+# ====================================
 # FETCH META DATA
-# =============================
+# ====================================
 
 def fetch_meta_data(account_id):
 
@@ -79,17 +79,26 @@ def fetch_meta_data(account_id):
         else:
             break
 
+
     df = pd.DataFrame(all_data)
 
     if df.empty:
         return None
 
 
+    # ====================================
+    # FILTER NV
+    # ====================================
+
     df = df[
         df["campaign_name"].str.contains("NV", case=False, na=False) &
         ~df["campaign_name"].str.contains("RM", case=False, na=False)
     ].copy()
 
+
+    # ====================================
+    # ACTION PARSER
+    # ====================================
 
     def get_action(actions, types):
 
@@ -118,12 +127,16 @@ def fetch_meta_data(account_id):
 
     daily = df[cols].sum()
 
+
+    # convert numpy → python int
+    daily = {k: int(v) for k,v in daily.items()}
+
     return daily
 
 
-# =============================
+# ====================================
 # GOOGLE SHEETS AUTH
-# =============================
+# ====================================
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -144,9 +157,9 @@ gc = gspread.authorize(creds)
 spreadsheet = gc.open("Import Range Dobujack")
 
 
-# =============================
+# ====================================
 # PROCESS PLATFORM
-# =============================
+# ====================================
 
 today = str(date.today())
 
@@ -157,10 +170,27 @@ for sheet_name, account_id in ACCOUNTS.items():
     data = fetch_meta_data(account_id)
 
     if data is None:
-        print("No data")
+        print("No data returned")
         continue
 
     worksheet = spreadsheet.worksheet(sheet_name)
+
+
+    # ====================================
+    # ANTI DUPLICATE DATE
+    # ====================================
+
+    existing_dates = worksheet.col_values(1)
+
+    if today in existing_dates:
+
+        print(f"{sheet_name} already has data for {today}")
+        continue
+
+
+    # ====================================
+    # APPEND DATA
+    # ====================================
 
     row = [
         today,
@@ -173,3 +203,5 @@ for sheet_name, account_id in ACCOUNTS.items():
     worksheet.append_row(row, value_input_option="USER_ENTERED")
 
     print(f"{sheet_name} appended for {today}")
+
+    time.sleep(1)
