@@ -29,4 +29,4 @@ jobs:
           META_TOKEN: ${{ secrets.META_TOKEN }}
           GOOGLE_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_SERVICE_ACCOUNT }}
         run: |
-          Dobujack_NV.py
+          python Dobujack_NV.py
