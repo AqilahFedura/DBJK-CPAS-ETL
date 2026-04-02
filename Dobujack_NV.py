@@ -1,4 +1,4 @@
-script_as_string = """
+ """
 import requests
 import pandas as pd
 import gspread
