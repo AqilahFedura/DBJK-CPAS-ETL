@@ -1,3 +1,4 @@
+script_as_string = """
 import requests
 import pandas as pd
 import gspread
@@ -165,7 +166,7 @@ today = str(date.today())
 
 for sheet_name, account_id in ACCOUNTS.items():
 
-    print(f"\nProcessing {sheet_name}")
+    print(f"\\nProcessing {sheet_name}")
 
     data = fetch_meta_data(account_id)
 
@@ -205,3 +206,4 @@ for sheet_name, account_id in ACCOUNTS.items():
     print(f"{sheet_name} appended for {today}")
 
     time.sleep(1)
+"""
